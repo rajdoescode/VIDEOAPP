@@ -1,30 +1,29 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI!;
 
 if (!MONGODB_URI) {
-  throw new Error("Please define new MONGODB_URI in env variable");
+  throw new Error("Please define mongo_uri in env variables");
 }
 
 let cached = global.mongoose;
 
 if (!cached) {
-  const cached = (global.mongoose = { conn: null, promise: null });
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
-export default async function connectionToDatabase() {
+export async function connectToDatabase() {
   if (cached.conn) {
     return cached.conn;
   }
 
-  const opts = {
-    bufferCommands: true,
-    maxPoolSize: 10,
-  };
   if (!cached.promise) {
-    cached.promise = mongoose
-      .connect(MONGODB_URI as string, opts)
-      .then(() => mongoose.connection);
+    const opts = {
+      bufferCommands: true,
+      maxPoolSize: 10,
+    };
+
+    mongoose.connect(MONGODB_URI, opts).then(() => mongoose.connection);
   }
 
   try {
@@ -33,4 +32,6 @@ export default async function connectionToDatabase() {
     cached.promise = null;
     throw error;
   }
+
+  return cached.conn;
 }
